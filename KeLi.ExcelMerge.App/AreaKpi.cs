@@ -4,6 +4,7 @@ namespace KeLi.ExcelMerge.App
 {
     public class AreaKpi
     {
+
         [Description("楼栋号")]
         public string BuildingNo { get; set; }
 
