@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Models
 {
     /// <summary>
     /// 参照特性

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Models
 {
     /// <summary>
     /// 标题跨列特性

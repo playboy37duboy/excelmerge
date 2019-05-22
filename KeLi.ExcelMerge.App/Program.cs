@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using KeLi.ExcelMerge.App.Frms;
 
 namespace KeLi.ExcelMerge.App
 {

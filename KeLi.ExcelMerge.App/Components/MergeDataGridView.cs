@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Components
 {
     /// <summary>
     /// 可合并单元格列表控件
@@ -26,12 +26,61 @@ namespace KeLi.ExcelMerge.App
         /// <summary>
         /// 单元格信息列表
         /// </summary>
-        private readonly  List<CellInfo> _cellInfos = new List<CellInfo>();
+        private readonly List<CellInfo> _cellInfos = new List<CellInfo>();
 
         /// <summary>
         /// 是否已加载控件初始化设置
         /// </summary>
-        private bool _load;
+        private bool _loaded;
+
+        /// <summary>
+        /// 默认加载时列的总宽度
+        /// </summary>
+        private int _sumWidth;
+
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public MergeDataGridView()
+        {
+            InitializeComponent();
+        }
+
+        /// <summary>
+        /// 滚动事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnScroll(object sender, ScrollEventArgs e)
+        {
+            Refresh();
+        }
+
+        /// <summary>
+        /// 大小更改事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnSizeChange(object sender, EventArgs e)
+        {
+            var sumWidth = Columns.Cast<DataGridViewColumn>()
+                .Where(w => w.Visible)
+                .Select(s => s.Width)
+                .Sum();
+
+            if (_sumWidth == 0)
+                _sumWidth = sumWidth;
+
+            // 控件变的足够宽，自动填充，防止调整大小时内部机制导致始终两者相差几个像素
+            if ( Width - sumWidth > 5 && _loaded)
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+
+            // 控件变的足够窄，恢复滚动条
+            else if (sumWidth < _sumWidth && _loaded)
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
+            Refresh();
+        }
 
         /// <summary>
         /// 合并列
@@ -102,7 +151,7 @@ namespace KeLi.ExcelMerge.App
         /// <returns></returns>
         public int GetUpRowNum(int rowIndex, int columnIndex)
         {
-            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex).Select( s=> s.UpRowNum).Min();
+            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex).Select(s => s.UpRowNum).Min();
         }
 
         /// <summary>
@@ -122,16 +171,16 @@ namespace KeLi.ExcelMerge.App
         /// <param name="e"></param>
         protected override void OnCellPainting(DataGridViewCellPaintingEventArgs e)
         {
-            if (!_load)
+            if (!_loaded)
             {
                 // 清除选中行
                 ClearSelection();
 
-                _load = true;
+                _loaded = true;
             }
 
             // 行标题不重写
-            if (e.ColumnIndex < 0)
+            if (e.ColumnIndex < 0 || _spanRows.Count == 0)
             {
                 base.OnCellPainting(e);
                 return;
@@ -152,19 +201,14 @@ namespace KeLi.ExcelMerge.App
         /// <param name="e"></param>
         private void DrawTitle(DataGridViewCellPaintingEventArgs e)
         {
-            // 画边框
-            var g = e.Graphics;
-
             e.Paint(e.CellBounds, DataGridViewPaintParts.Background | DataGridViewPaintParts.Border);
 
+            var g = e.Graphics;
             var rect = e.CellBounds;
             var left = rect.Left;
             var right = rect.Right;
             var top = rect.Top;
             var bottom = rect.Bottom;
-
-            // 填充笔刷
-            var fillBrush = new SolidBrush(DefaultCellStyle.BackColor);
 
             // 网格画笔
             var gridPen = new Pen(GridColor);
@@ -179,57 +223,7 @@ namespace KeLi.ExcelMerge.App
             g.DrawLine(span.HeaderText == e.Value?.ToString() ? backPen : gridPen, left - 1, (top + bottom) / 2, right - 1, (top + bottom) / 2);
 
             // 标题文字
-            {
-                // 标题文字格式
-                var sf = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                };
-
-                // 二级标题矩形
-                rect = new Rectangle(left, (top + bottom) / 2 + 1, rect.Width, rect.Height / 2);
-
-                // 标题笔刷
-                var headerBrush = new SolidBrush(ColumnHeadersDefaultCellStyle.ForeColor);
-
-                g.FillRectangle(fillBrush, left, rect.Top, rect.Width, rect.Height - 2);
-
-                if (span.HeaderText != e.Value?.ToString())
-                    g.DrawString(e.Value?.ToString(), e.CellStyle.Font, headerBrush, rect, sf);
-
-                // 画分割线
-                g.DrawLine(gridPen, right - 1, top, right - 1, bottom);
-
-                left = GetColumnDisplayRectangle(span.LeftIndex, true).Left;
-
-                if (left < 0)
-                    left = GetCellDisplayRectangle(-1, -1, true).Width;
-
-                right = GetColumnDisplayRectangle(span.RightIndex, true).Right;
-
-                if (right < 0)
-                    right = rect.Width;
-
-                // 一级标题矩形
-                rect = new Rectangle(left, top, right - left, (bottom - top) / 2);
-
-                // 画上半部分底色
-                g.FillRectangle(fillBrush, left, top, rect.Width, rect.Height);
-
-                if (span.HeaderText != e.Value?.ToString())
-                    // 画一级标题
-                    g.DrawString(span.HeaderText, e.CellStyle.Font, headerBrush, rect, sf);
-
-                else
-                {
-                    // 两级标题矩形
-                    rect = new Rectangle(left, top, right - left, bottom - top);
-
-                    // 画一级标题
-                    g.DrawString(span.HeaderText, e.CellStyle.Font, headerBrush, rect, sf);
-                }
-            }
+            DrawString(e, span, ref left, ref right, ref top, ref bottom);
 
             // 画左边线
             g.DrawLine(gridPen, left - 1, top, left - 1, bottom);
@@ -238,6 +232,71 @@ namespace KeLi.ExcelMerge.App
             g.DrawLine(gridPen, right - 1, top, right - 1, bottom);
 
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// 画标题文字
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="span"></param>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <param name="top"></param>
+        /// <param name="bottom"></param>
+        private void DrawString(DataGridViewCellPaintingEventArgs e, SpanInfo span, ref int left, ref int right, ref int top, ref int bottom)
+        {
+            var g = e.Graphics;
+            var rect = e.CellBounds;
+
+            // 网格画笔
+            var gridPen = new Pen(GridColor);
+
+            // 填充笔刷
+            var fillBrush = new SolidBrush(DefaultCellStyle.BackColor);
+
+            // 标题文字格式
+            var sf = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            // 二级标题矩形
+            rect = new Rectangle(left, (top + bottom) / 2 + 1, rect.Width, rect.Height / 2);
+
+            // 标题笔刷
+            var headerBrush = new SolidBrush(ColumnHeadersDefaultCellStyle.ForeColor);
+
+            g.FillRectangle(fillBrush, left, rect.Top, rect.Width, rect.Height - 2);
+
+            // 一级标题和二级标题不同时，需要画二级标题
+            if (span.HeaderText != e.Value?.ToString())
+                g.DrawString(e.Value?.ToString(), e.CellStyle.Font, headerBrush, rect, sf);
+
+            // 画分割线
+            g.DrawLine(gridPen, right - 1, top, right - 1, bottom);
+
+            left = GetColumnDisplayRectangle(span.LeftIndex, true).Left;
+
+            if (left < 0)
+                left = GetCellDisplayRectangle(-1, -1, true).Width;
+
+            right = GetColumnDisplayRectangle(span.RightIndex, true).Right;
+
+            if (right < 0)
+                right = rect.Width;
+
+            // 一级标题矩形
+            rect = new Rectangle(left, top, right - left, (bottom - top) / 2);
+
+            // 画上半部分底色
+            g.FillRectangle(fillBrush, left, top, rect.Width, rect.Height);
+
+            if (span.HeaderText == e.Value?.ToString())
+                rect = new Rectangle(left, top, right - left, bottom - top);
+
+            // 始终都需要画一级标题
+            g.DrawString(span.HeaderText, e.CellStyle.Font, headerBrush, rect, sf);
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using Spire.Xls;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Assists
 {
     /// <summary>
     /// 表格辅助
@@ -31,14 +31,11 @@ namespace KeLi.ExcelMerge.App
                 var p = typeof(T).GetProperties()[i];
                 var pDcrp = GetDcrp(p);
 
-                if (pDcrp == null)
-                    throw new Exception();
-
                 var column = new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? p.Name : pDcrp,
-                    FillWeight = pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
+                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
                 };
 
                 dgv.Columns.Add(column);
@@ -62,14 +59,11 @@ namespace KeLi.ExcelMerge.App
                 var p = typeof(T).GetProperties()[i];
                 var pDcrp = GetDcrp(p);
 
-                if (pDcrp == null)
-                    throw new Exception();
-
                 var column = new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? p.Name : pDcrp,
-                    FillWeight = pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
+                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
                 };
 
                 dgv.Columns.Add(column);
@@ -114,7 +108,7 @@ namespace KeLi.ExcelMerge.App
 
                         foreach (var p in pls)
                         {
-                            p.SetValue(obj,  cells[i, index] != DBNull.Value ? cells[i, index].ToString() : null, null);
+                            p.SetValue(obj, cells[i, index] != DBNull.Value ? cells[i, index].ToString() : null, null);
                             break;
                         }
                     }
@@ -178,7 +172,12 @@ namespace KeLi.ExcelMerge.App
 
                 foreach (var column in dgv.Columns.Cast<DataGridViewColumn>().Where(w => w.Visible).ToList())
                 {
-                    worksheet.Cells[i + 2, index + 1].Value = dgv.Rows[i].Cells[column.Name].Value;
+                    // 表格值为空，数据仍然存在需要值的情形
+                    var val = dgv.Rows[i].Cells[column.Name].Value;
+                    var tag = dgv.Rows[i].Cells[column.Name].Tag;
+                    var isNull = string.IsNullOrWhiteSpace(val.ToString());
+
+                    worksheet.Cells[i + 2, index + 1].Value = isNull ? tag : val;
                     index++;
                 }
             }
@@ -291,7 +290,7 @@ namespace KeLi.ExcelMerge.App
             // 行标题不显示
             dgv.RowHeadersVisible = false;
 
-            // 设置两级标题高度
+            // 设置两级标题高度，长标题文字调整标高也是一种较好的解决方式
             dgv.ColumnHeadersHeight = 50;
 
             // 关闭自动设置标题高度
@@ -303,8 +302,9 @@ namespace KeLi.ExcelMerge.App
             // 内容单元格居中对齐
             dgv.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            // 填充模式
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            if(dgv.ColumnCount < 7)
+                // 填充模式
+                dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             // 整行选中
             dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -375,8 +375,7 @@ namespace KeLi.ExcelMerge.App
         /// <param name="range"></param>
         /// <param name="hAlign"></param>
         /// <param name="vAlign"></param>
-        public static void SetAlign(this ExcelRange range, ExcelHorizontalAlignment hAlign,
-            ExcelVerticalAlignment vAlign)
+        public static void SetAlign(this ExcelRange range, ExcelHorizontalAlignment hAlign, ExcelVerticalAlignment vAlign)
         {
             range.Style.HorizontalAlignment = hAlign;
             range.Style.VerticalAlignment = vAlign;
@@ -577,8 +576,7 @@ namespace KeLi.ExcelMerge.App
         /// <param name="position"></param>
         /// <param name="style"></param>
         /// <param name="color"></param>
-        public static void SetBorderItem(this ExcelWorksheet worksheet, Position position, ExcelBorderStyle style,
-            Color color)
+        public static void SetBorderItem(this ExcelWorksheet worksheet, Position position, ExcelBorderStyle style, Color color)
         {
             worksheet.Cells.SetBorderItem(position, style, color);
         }
@@ -809,8 +807,7 @@ namespace KeLi.ExcelMerge.App
         /// <param name="style"></param>
         /// <param name="img"></param>
         /// <param name="showLines"></param>
-        public static void SetBackground(this ExcelWorksheet worksheet, ExcelFillStyle style, Image img = null,
-            bool showLines = false)
+        public static void SetBackground(this ExcelWorksheet worksheet, ExcelFillStyle style, Image img = null, bool showLines = false)
         {
             // 设置线条样式
             worksheet.Cells.Style.Fill.PatternType = style;
@@ -829,8 +826,7 @@ namespace KeLi.ExcelMerge.App
         /// <param name="color"></param>
         /// <param name="img"></param>
         /// <param name="showLines"></param>
-        public static void SetBackground(this ExcelWorksheet worksheet, Color color, Image img = null,
-            bool showLines = false)
+        public static void SetBackground(this ExcelWorksheet worksheet, Color color, Image img = null, bool showLines = false)
         {
             // 设置背景色
             worksheet.Cells.Style.Fill.BackgroundColor.SetColor(color);
@@ -876,7 +872,7 @@ namespace KeLi.ExcelMerge.App
         /// <param name="py"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        public static void SetPicture(this ExcelWorksheet worksheet, string name, Image img, int px = 100, int py = 100, int width = 100, int height = 100)
+        public static void SetPicture(this ExcelWorksheet worksheet, string name, Image img, int px, int py, int width = 100, int height = 100)
         {
             // 插入图片
             var picture = worksheet.Drawings.AddPicture(name, img);

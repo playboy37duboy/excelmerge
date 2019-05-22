@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Models
 {
     public class AreaKpi
     {

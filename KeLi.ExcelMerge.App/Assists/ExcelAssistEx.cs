@@ -4,10 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using KeLi.ExcelMerge.App.Components;
+using KeLi.ExcelMerge.App.Models;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Assists
 {
     /// <summary>
     /// 表格辅助扩展
@@ -29,15 +31,12 @@ namespace KeLi.ExcelMerge.App
                 var p = typeof(Model).GetProperties()[i];
                 var pDcrp = GetDcrp(p);
 
-                if (pDcrp == null)
-                    continue;
-
                 var column = new DataGridViewTextBoxColumn
                 {
                     Name = p.Name,
                     DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? p.Name : pDcrp,
-                    //FillWeight = pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length,
+                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length,
                     Tag = GetReference(p)
                 };
 
@@ -49,10 +48,7 @@ namespace KeLi.ExcelMerge.App
             mdgv.DataSource = objs;
 
             // 设置表格样式
-            SetDgvStyle(mdgv);
-
-            // 防止合并后，依旧选中行或单元格显示
-           // mdgv.Enabled = false;
+            mdgv.SetDgvStyle();
 
             // 设置跨列合并单元格
             MergeHeaders<Title>(mdgv);
@@ -242,34 +238,6 @@ namespace KeLi.ExcelMerge.App
             var startCell = new ExcelAddress(rangeStr).Start;
 
             return excelRange[startCell.Row, startCell.Column].Value?.ToString() ?? string.Empty;
-        }
-
-        /// <summary>
-        /// 设置表格控件样式
-        /// </summary>
-        /// <param name="dgv"></param>
-        public static void SetDgvStyle(DataGridView dgv)
-        {
-            // 行标题不显示
-            dgv.RowHeadersVisible = false;
-
-            // 设置两级标题高度
-            dgv.ColumnHeadersHeight = 50;
-
-            // 关闭自动设置标题高度
-            dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-
-            // 标题居中
-            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-
-            // 内容单元格居中对齐
-            dgv.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-
-            // 填充模式
-            //dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-            // 整行选中
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
         /// <summary>
