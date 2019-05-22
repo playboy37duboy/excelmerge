@@ -65,8 +65,7 @@ namespace KeLi.ExcelMerge.App.Components
         {
             var sumWidth = Columns.Cast<DataGridViewColumn>()
                 .Where(w => w.Visible)
-                .Select(s => s.Width)
-                .Sum();
+                .Select(s => s.Width).Sum();
 
             if (_sumWidth == 0)
                 _sumWidth = sumWidth;
@@ -151,7 +150,8 @@ namespace KeLi.ExcelMerge.App.Components
         /// <returns></returns>
         public int GetUpRowNum(int rowIndex, int columnIndex)
         {
-            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex).Select(s => s.UpRowNum).Min();
+            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex)
+                .Select(s => s.UpRowNum).Min();
         }
 
         /// <summary>
@@ -162,7 +162,8 @@ namespace KeLi.ExcelMerge.App.Components
         /// <returns></returns>
         public int GetDownRowNum(int rowIndex, int columnIndex)
         {
-            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex).Select(s => s.DownRowNum).Min();
+            return _cellInfos.Where(w => w.RowIndex == rowIndex && w.ColumnIndex <= columnIndex)
+                .Select(s => s.DownRowNum).Min();
         }
 
         /// <summary>
@@ -317,6 +318,7 @@ namespace KeLi.ExcelMerge.App.Components
 
             var rect = e.CellBounds;
             var g = e.Graphics;
+
             var upRowNum = GetUpRowNum(e.RowIndex, e.ColumnIndex);
             var downRowNum = GetDownRowNum(e.RowIndex, e.ColumnIndex);
             var tag = Columns[e.ColumnIndex].Tag.ToString();
@@ -325,11 +327,8 @@ namespace KeLi.ExcelMerge.App.Components
             {
                 var index = Columns[tag]?.Index;
 
-                if (index == null)
-                    throw new Exception();
-
-                upRowNum = _cellInfos.Where(w => w.RowIndex == e.RowIndex && w.ColumnIndex == index).Select(s => s.UpRowNum).FirstOrDefault();
-                downRowNum = _cellInfos.Where(w => w.RowIndex == e.RowIndex && w.ColumnIndex == index).Select(s => s.DownRowNum).FirstOrDefault();
+                upRowNum = GetUpRowNum(e.RowIndex, index ?? 0);
+                downRowNum = GetDownRowNum(e.RowIndex, index ?? 0);
             }
 
             var totalRowNum = upRowNum + downRowNum - 1;

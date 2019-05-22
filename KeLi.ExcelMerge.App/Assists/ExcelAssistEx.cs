@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -123,7 +124,7 @@ namespace KeLi.ExcelMerge.App.Assists
                 worksheet.Cells[1, i + 1, 2, i + 1].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
             }
 
-            // 内容
+            // 单元格赋值
             for (var i = 0; i < mdgv.RowCount; i++)
             {
                 index = 0;
@@ -134,50 +135,31 @@ namespace KeLi.ExcelMerge.App.Assists
                     index++;
                 }
             }
-
-            // 内容合并
+            
+            // 单元格合并
             // 遍历列
             for (var i = 1; i <= worksheet.Dimension.Columns; i++)
             {
                 // 遍历行
                 for (var j = 3; j <= worksheet.Dimension.Rows; j++)
                 {
-                    var upRowsNum = 0;//mdgv.GetUpRowNum(j-3, i);
-                    var downRowNum = 0;//mdgv.GetDownRowNum(j-3, i);
+                    var upRowsNum = mdgv.GetUpRowNum(j - 3, i - 1) - 1;
+                    var downRowNum = mdgv.GetDownRowNum(j - 3, i - 1) - 1;
                     var curCell = worksheet.Cells[j, i];
+
+                    // 控件列索引从0开始
+                    var tag = mdgv.Columns[i - 1].Tag.ToString();
+
+                    if (tag != string.Empty)
+                    {
+                        var columnIndex = mdgv.Columns[tag]?.Index;
+
+                        upRowsNum = mdgv.GetUpRowNum(j - 3, columnIndex ?? 0) - 1;
+                        downRowNum = mdgv.GetDownRowNum(j - 3, columnIndex ?? 0) - 1;
+                    }
 
                     if (curCell.Merge)
                         continue;
-
-                    // 单元格朝上比较
-                    for (var k = j - 1; k > 2; k--)
-                    {
-                        var tempCell = worksheet.Cells[k, i];
-
-                        if (tempCell.Merge)
-                            break;
-
-                        if (tempCell.Value?.ToString() == curCell.Value?.ToString())
-                            upRowsNum++;
-
-                        else
-                            break;
-                    }
-
-                    // 单元格朝下比较
-                    for (var k = j + 1; k <= worksheet.Dimension.Rows; k++)
-                    {
-                        var tempCell = worksheet.Cells[k, i];
-
-                        if (tempCell.Merge)
-                            break;
-
-                        if (tempCell.Value?.ToString() == curCell.Value?.ToString())
-                            downRowNum++;
-
-                        else
-                            break;
-                    }
 
                     if (worksheet.Cells[j - upRowsNum, i].Merge)
                         continue;
