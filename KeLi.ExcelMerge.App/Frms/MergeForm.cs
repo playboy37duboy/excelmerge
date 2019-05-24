@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using KeLi.ExcelMerge.App.Assists;
+using KeLi.ExcelMerge.App.Models;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Frms
 {
     public partial class MergeForm : Form
     {

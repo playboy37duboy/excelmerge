@@ -1,13 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using KeLi.ExcelMerge.App.Components;
+using KeLi.ExcelMerge.App.Models;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Assists
 {
     /// <summary>
     /// 表格辅助扩展
@@ -24,35 +27,35 @@ namespace KeLi.ExcelMerge.App
         /// <param name="mergeCell"></param>
         public static void ImportDgv<Title, Model>(this MergeDataGridView mdgv, List<Model> objs, bool mergeCell = true)
         {
-            for (var i = 0; i < typeof(Model).GetProperties().Length; i++)
+            if (mdgv.ColumnCount == 0)
             {
-                var p = typeof(Model).GetProperties()[i];
-                var pDcrp = GetDcrp(p);
-
-                if (pDcrp == null)
-                    continue;
-
-                var column = new DataGridViewTextBoxColumn
+                for (var i = 0; i < typeof(Model).GetProperties().Length; i++)
                 {
-                    Name = p.Name,
-                    DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? p.Name : pDcrp,
-                    //FillWeight = pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length,
-                    Tag = GetReference(p)
-                };
+                    var p = typeof(Model).GetProperties()[i];
+                    var pDcrp = GetDcrp(p);
 
-                mdgv.Columns.Add(column);
-                mdgv.MergeColumnNames.Add(p.Name);
+                    var column = new DataGridViewTextBoxColumn
+                    {
+                        Name = p.Name,
+                        Tag = GetReference(p),
+                        DataPropertyName = p.Name,
+                        HeaderText = string.IsNullOrEmpty(pDcrp) ? string.Empty : pDcrp,
+                        FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
+                            : pDcrp.Length > 6 ? 4
+                            : pDcrp.Length < 4 ? 3
+                            : pDcrp.Length
+                    };
+
+                    mdgv.Columns.Add(column);
+                    mdgv.MergeColumnNames.Add(p.Name);
+                }
             }
 
             // 数据源
             mdgv.DataSource = objs;
 
             // 设置表格样式
-            SetDgvStyle(mdgv);
-
-            // 防止合并后，依旧选中行或单元格显示
-           // mdgv.Enabled = false;
+            mdgv.SetDgvStyle();
 
             // 设置跨列合并单元格
             MergeHeaders<Title>(mdgv);
@@ -127,7 +130,7 @@ namespace KeLi.ExcelMerge.App
                 worksheet.Cells[1, i + 1, 2, i + 1].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
             }
 
-            // 内容
+            // 单元格赋值
             for (var i = 0; i < mdgv.RowCount; i++)
             {
                 index = 0;
@@ -138,50 +141,31 @@ namespace KeLi.ExcelMerge.App
                     index++;
                 }
             }
-
-            // 内容合并
+            
+            // 单元格合并
             // 遍历列
             for (var i = 1; i <= worksheet.Dimension.Columns; i++)
             {
                 // 遍历行
                 for (var j = 3; j <= worksheet.Dimension.Rows; j++)
                 {
-                    var upRowsNum = 0;//mdgv.GetUpRowNum(j-3, i);
-                    var downRowNum = 0;//mdgv.GetDownRowNum(j-3, i);
+                    var upRowsNum = mdgv.GetUpRowNum(j - 3, i - 1) - 1;
+                    var downRowNum = mdgv.GetDownRowNum(j - 3, i - 1) - 1;
                     var curCell = worksheet.Cells[j, i];
+
+                    // 控件列索引从0开始
+                    var tag = mdgv.Columns[i - 1].Tag.ToString();
+
+                    if (tag != string.Empty)
+                    {
+                        var columnIndex = mdgv.Columns[tag]?.Index;
+
+                        upRowsNum = mdgv.GetUpRowNum(j - 3, columnIndex ?? 0) - 1;
+                        downRowNum = mdgv.GetDownRowNum(j - 3, columnIndex ?? 0) - 1;
+                    }
 
                     if (curCell.Merge)
                         continue;
-
-                    // 单元格朝上比较
-                    for (var k = j - 1; k > 2; k--)
-                    {
-                        var tempCell = worksheet.Cells[k, i];
-
-                        if (tempCell.Merge)
-                            break;
-
-                        if (tempCell.Value?.ToString() == curCell.Value?.ToString())
-                            upRowsNum++;
-
-                        else
-                            break;
-                    }
-
-                    // 单元格朝下比较
-                    for (var k = j + 1; k <= worksheet.Dimension.Rows; k++)
-                    {
-                        var tempCell = worksheet.Cells[k, i];
-
-                        if (tempCell.Merge)
-                            break;
-
-                        if (tempCell.Value?.ToString() == curCell.Value?.ToString())
-                            downRowNum++;
-
-                        else
-                            break;
-                    }
 
                     if (worksheet.Cells[j - upRowsNum, i].Merge)
                         continue;
@@ -242,34 +226,6 @@ namespace KeLi.ExcelMerge.App
             var startCell = new ExcelAddress(rangeStr).Start;
 
             return excelRange[startCell.Row, startCell.Column].Value?.ToString() ?? string.Empty;
-        }
-
-        /// <summary>
-        /// 设置表格控件样式
-        /// </summary>
-        /// <param name="dgv"></param>
-        public static void SetDgvStyle(DataGridView dgv)
-        {
-            // 行标题不显示
-            dgv.RowHeadersVisible = false;
-
-            // 设置两级标题高度
-            dgv.ColumnHeadersHeight = 50;
-
-            // 关闭自动设置标题高度
-            dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-
-            // 标题居中
-            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-
-            // 内容单元格居中对齐
-            dgv.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-
-            // 填充模式
-            //dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-            // 整行选中
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
         /// <summary>

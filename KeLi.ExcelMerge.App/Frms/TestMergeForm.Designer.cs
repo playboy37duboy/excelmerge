@@ -1,4 +1,6 @@
-﻿namespace KeLi.ExcelMerge.App
+﻿using KeLi.ExcelMerge.App.Components;
+
+namespace KeLi.ExcelMerge.App.Frms
 {
     partial class TestMergeForm
     {
@@ -29,7 +31,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TestMergeForm));
-            this.mdgvTest = new KeLi.ExcelMerge.App.MergeDataGridView();
+            this.mdgvTest = new KeLi.ExcelMerge.App.Components.MergeDataGridView();
             ((System.ComponentModel.ISupportInitialize)(this.mdgvTest)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,15 +42,14 @@
             this.mdgvTest.MergeColumnNames = ((System.Collections.Generic.List<string>)(resources.GetObject("mdgvTest.MergeColumnNames")));
             this.mdgvTest.Name = "mdgvTest";
             this.mdgvTest.RowTemplate.Height = 23;
-            this.mdgvTest.ScrollBars = System.Windows.Forms.ScrollBars.Horizontal;
-            this.mdgvTest.Size = new System.Drawing.Size(930, 492);
+            this.mdgvTest.Size = new System.Drawing.Size(670, 437);
             this.mdgvTest.TabIndex = 0;
             // 
             // TestMergeForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(930, 492);
+            this.ClientSize = new System.Drawing.Size(670, 437);
             this.Controls.Add(this.mdgvTest);
             this.Name = "TestMergeForm";
             this.Text = "测试可合并单元格控件";

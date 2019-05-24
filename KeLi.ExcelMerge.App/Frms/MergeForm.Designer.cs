@@ -1,4 +1,4 @@
-﻿namespace KeLi.ExcelMerge.App
+﻿namespace KeLi.ExcelMerge.App.Frms
 {
     partial class MergeForm
     {

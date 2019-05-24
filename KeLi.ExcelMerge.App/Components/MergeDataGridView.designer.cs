@@ -1,7 +1,5 @@
 ﻿
-using System.Windows.Forms;
-
-namespace KeLi.ExcelMerge.App
+namespace KeLi.ExcelMerge.App.Components
 {
     partial class MergeDataGridView
     {
@@ -32,6 +30,8 @@ namespace KeLi.ExcelMerge.App
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            Scroll += OnScroll;
+            SizeChanged += OnSizeChange;
         }
 
         #endregion
