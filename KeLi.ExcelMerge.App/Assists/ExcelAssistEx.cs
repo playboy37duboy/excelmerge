@@ -39,7 +39,7 @@ namespace KeLi.ExcelMerge.App.Assists
                         Name = p.Name,
                         Tag = GetReference(p),
                         DataPropertyName = p.Name,
-                        HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                        HeaderText = string.IsNullOrEmpty(pDcrp) ? string.Empty : pDcrp,
                         FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
                             : pDcrp.Length > 6 ? 4
                             : pDcrp.Length < 4 ? 3

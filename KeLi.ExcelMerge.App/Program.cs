@@ -12,7 +12,7 @@ namespace KeLi.ExcelMerge.App
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-            Application.Run(new TestMergeForm());
+            Application.Run(new MergeForm());
         }
     }
 }
