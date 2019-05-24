@@ -26,19 +26,25 @@ namespace KeLi.ExcelMerge.App.Assists
         /// <param name="objs"></param>
         public static void ImportDgv<T>(this DataGridView dgv, List<T> objs)
         {
-            for (var i = 0; i < typeof(T).GetProperties().Length; i++)
+            if (dgv.ColumnCount == 0)
             {
-                var p = typeof(T).GetProperties()[i];
-                var pDcrp = GetDcrp(p);
-
-                var column = new DataGridViewTextBoxColumn
+                for (var i = 0; i < typeof(T).GetProperties().Length; i++)
                 {
-                    DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
-                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
-                };
+                    var p = typeof(T).GetProperties()[i];
+                    var pDcrp = GetDcrp(p);
 
-                dgv.Columns.Add(column);
+                    var column = new DataGridViewTextBoxColumn
+                    {
+                        Name = p.Name,
+                        DataPropertyName = p.Name,
+                        HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                        FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
+                            : pDcrp.Length > 6 ? 4
+                            : pDcrp.Length < 4 ? 3 : pDcrp.Length
+                    };
+
+                    dgv.Columns.Add(column);
+                }
             }
 
             dgv.DataSource = objs;
@@ -54,19 +60,26 @@ namespace KeLi.ExcelMerge.App.Assists
         /// <param name="sheetName"></param>
         public static List<T> ImportDgv<T>(this DataGridView dgv, string filePath, string sheetName = "Sheet1")
         {
-            for (var i = 0; i < typeof(T).GetProperties().Length; i++)
+            if (dgv.ColumnCount == 0)
             {
-                var p = typeof(T).GetProperties()[i];
-                var pDcrp = GetDcrp(p);
-
-                var column = new DataGridViewTextBoxColumn
+                for (var i = 0; i < typeof(T).GetProperties().Length; i++)
                 {
-                    DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
-                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length
-                };
+                    var p = typeof(T).GetProperties()[i];
+                    var pDcrp = GetDcrp(p);
 
-                dgv.Columns.Add(column);
+                    var column = new DataGridViewTextBoxColumn
+                    {
+                        Name = p.Name,
+                        DataPropertyName = p.Name,
+                        HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                        FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
+                            : pDcrp.Length > 6 ? 4
+                            : pDcrp.Length < 4 ? 3
+                            : pDcrp.Length
+                    };
+
+                    dgv.Columns.Add(column);
+                }
             }
 
             var results = ImportData<T>(filePath, sheetName);
@@ -90,7 +103,8 @@ namespace KeLi.ExcelMerge.App.Assists
 
             using (var excel = new ExcelPackage(fileInfo))
             {
-                var worksheet = sheetName == null ? excel.Workbook.Worksheets.FirstOrDefault() : excel.Workbook.Worksheets[sheetName];
+                var sheets = excel.Workbook.Worksheets;
+                var worksheet = sheetName == null ? sheets.FirstOrDefault() : sheets[sheetName];
                 var cells = worksheet?.Cells.Value as object[,];
 
                 if (cells == null)
@@ -108,7 +122,9 @@ namespace KeLi.ExcelMerge.App.Assists
 
                         foreach (var p in pls)
                         {
-                            p.SetValue(obj, cells[i, index] != DBNull.Value ? cells[i, index].ToString() : null, null);
+                            var val = Convert.ChangeType(cells[i, index], p.PropertyType);
+
+                            p.SetValue(obj, cells[i, index] != DBNull.Value ? val : null, null);
                             break;
                         }
                     }
@@ -175,7 +191,7 @@ namespace KeLi.ExcelMerge.App.Assists
                     // 表格值为空，数据仍然存在需要值的情形
                     var val = dgv.Rows[i].Cells[column.Name].Value;
                     var tag = dgv.Rows[i].Cells[column.Name].Tag;
-                    var isNull = string.IsNullOrWhiteSpace(val.ToString());
+                    var isNull = string.IsNullOrWhiteSpace(val?.ToString());
 
                     worksheet.Cells[i + 2, index + 1].Value = isNull ? tag : val;
                     index++;
@@ -287,6 +303,18 @@ namespace KeLi.ExcelMerge.App.Assists
         /// <param name="dgv"></param>
         public static void SetDgvStyle(this DataGridView dgv)
         {
+            // 背景色
+            dgv.BackgroundColor = Color.Gray;
+            
+            // 无边框样式
+            dgv.BorderStyle = BorderStyle.None;
+            
+            // 禁止用户添加行
+            dgv.AllowUserToAddRows = false;
+
+            // 禁止调整行高
+            dgv.RowTemplate.Height = 25;
+
             // 行标题不显示
             dgv.RowHeadersVisible = false;
 

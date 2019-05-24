@@ -27,22 +27,28 @@ namespace KeLi.ExcelMerge.App.Assists
         /// <param name="mergeCell"></param>
         public static void ImportDgv<Title, Model>(this MergeDataGridView mdgv, List<Model> objs, bool mergeCell = true)
         {
-            for (var i = 0; i < typeof(Model).GetProperties().Length; i++)
+            if (mdgv.ColumnCount == 0)
             {
-                var p = typeof(Model).GetProperties()[i];
-                var pDcrp = GetDcrp(p);
-
-                var column = new DataGridViewTextBoxColumn
+                for (var i = 0; i < typeof(Model).GetProperties().Length; i++)
                 {
-                    Name = p.Name,
-                    DataPropertyName = p.Name,
-                    HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
-                    FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7 : pDcrp.Length > 6 ? 4 : pDcrp.Length < 4 ? 3 : pDcrp.Length,
-                    Tag = GetReference(p)
-                };
+                    var p = typeof(Model).GetProperties()[i];
+                    var pDcrp = GetDcrp(p);
 
-                mdgv.Columns.Add(column);
-                mdgv.MergeColumnNames.Add(p.Name);
+                    var column = new DataGridViewTextBoxColumn
+                    {
+                        Name = p.Name,
+                        Tag = GetReference(p),
+                        DataPropertyName = p.Name,
+                        HeaderText = string.IsNullOrEmpty(pDcrp) ? null : pDcrp,
+                        FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
+                            : pDcrp.Length > 6 ? 4
+                            : pDcrp.Length < 4 ? 3
+                            : pDcrp.Length
+                    };
+
+                    mdgv.Columns.Add(column);
+                    mdgv.MergeColumnNames.Add(p.Name);
+                }
             }
 
             // 数据源
