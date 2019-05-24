@@ -42,7 +42,8 @@ namespace KeLi.ExcelMerge.App.Assists
                         HeaderText = string.IsNullOrEmpty(pDcrp) ? string.Empty : pDcrp,
                         FillWeight = pDcrp == null || pDcrp.Length > 10 ? 7
                             : pDcrp.Length > 6 ? 4
-                            : pDcrp.Length < 4 ? 3 : pDcrp.Length
+                            : pDcrp.Length < 4 ? 3
+                            : pDcrp.Length
                     };
 
                     mdgv.Columns.Add(column);
